@@ -214,7 +214,7 @@ public class ChessGame {
         // check if king is attacked
         return isPositionAttacked(enemyColor, kingPos);
     }
-    
+
     /**
      *
      * @param teamColor team of king we're looking for
@@ -233,6 +233,7 @@ public class ChessGame {
         // THIS SHOULD NEVER HAPPEN
         return null;
     }
+    
     /**
      *
      * @param attackingColor the enemy team
