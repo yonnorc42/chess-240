@@ -233,7 +233,7 @@ public class ChessGame {
         // THIS SHOULD NEVER HAPPEN
         return null;
     }
-    
+
     /**
      *
      * @param attackingColor the enemy team
@@ -269,6 +269,7 @@ public class ChessGame {
         }
         return false;
     }
+
     /**
      *
      * @param board chess board
