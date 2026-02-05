@@ -214,6 +214,7 @@ public class ChessGame {
         // check if king is attacked
         return isPositionAttacked(enemyColor, kingPos);
     }
+    
     /**
      *
      * @param teamColor team of king we're looking for
