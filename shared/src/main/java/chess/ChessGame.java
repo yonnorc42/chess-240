@@ -167,6 +167,7 @@ public class ChessGame {
             board.addPiece(move.getEndPosition(), capturedPiece);
             throw new InvalidMoveException("Move leaves king in check");
         }
+
         // handle castling rook move here
         if (movingPiece.getPieceType() == ChessPiece.PieceType.KING) {
             int startCol = move.getStartPosition().getColumn();
@@ -189,7 +190,6 @@ public class ChessGame {
                 rook.setMoved();
             }
         }
-
         // set last move for checking en passant
         lastMove = move;
         // mark piece as moved
@@ -197,6 +197,7 @@ public class ChessGame {
         // switch turn
         teamTurn = (teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
     }
+
     /**
      * Determines if the given team is in check
      *
