@@ -38,12 +38,16 @@ public class Server {
         javalin.put("/game", this::handleJoinGame);
     }
 
+    private void sendJson(Context ctx, int status, Object obj) {
+        ctx.status(status).contentType("application/json").result(gson.toJson(obj));
+    }
+
     private void handleClear(Context ctx) {
         try {
             clearService.clear();
-            ctx.status(200).json(new Object());
+            sendJson(ctx, 200, new Object());
         } catch (ServiceException e) {
-            ctx.status(e.getStatusCode()).json(new ErrorResult(e.getMessage()));
+            sendJson(ctx, e.getStatusCode(), new ErrorResult(e.getMessage()));
         }
     }
 
@@ -52,9 +56,9 @@ public class Server {
             RegisterRequest req = gson.fromJson(ctx.body(), RegisterRequest.class);
             UserData user = new UserData(req.username(), req.password(), req.email());
             AuthData auth = userService.register(user);
-            ctx.status(200).json(new AuthResult(auth.username(), auth.authToken()));
+            sendJson(ctx, 200, new AuthResult(auth.username(), auth.authToken()));
         } catch (ServiceException e) {
-            ctx.status(e.getStatusCode()).json(new ErrorResult(e.getMessage()));
+            sendJson(ctx, e.getStatusCode(), new ErrorResult(e.getMessage()));
         }
     }
 
@@ -62,9 +66,9 @@ public class Server {
         try {
             LoginRequest req = gson.fromJson(ctx.body(), LoginRequest.class);
             AuthData auth = userService.login(req.username(), req.password());
-            ctx.status(200).json(new AuthResult(auth.username(), auth.authToken()));
+            sendJson(ctx, 200, new AuthResult(auth.username(), auth.authToken()));
         } catch (ServiceException e) {
-            ctx.status(e.getStatusCode()).json(new ErrorResult(e.getMessage()));
+            sendJson(ctx, e.getStatusCode(), new ErrorResult(e.getMessage()));
         }
     }
 
@@ -72,9 +76,9 @@ public class Server {
         try {
             String authToken = ctx.header("authorization");
             userService.logout(authToken);
-            ctx.status(200).json(new Object());
+            sendJson(ctx, 200, new Object());
         } catch (ServiceException e) {
-            ctx.status(e.getStatusCode()).json(new ErrorResult(e.getMessage()));
+            sendJson(ctx, e.getStatusCode(), new ErrorResult(e.getMessage()));
         }
     }
 
@@ -82,9 +86,9 @@ public class Server {
         try {
             String authToken = ctx.header("authorization");
             Collection<GameData> games = gameService.listGames(authToken);
-            ctx.status(200).json(new ListGamesResult(games));
+            sendJson(ctx, 200, new ListGamesResult(games));
         } catch (ServiceException e) {
-            ctx.status(e.getStatusCode()).json(new ErrorResult(e.getMessage()));
+            sendJson(ctx, e.getStatusCode(), new ErrorResult(e.getMessage()));
         }
     }
 
@@ -93,9 +97,9 @@ public class Server {
             String authToken = ctx.header("authorization");
             CreateGameRequest req = gson.fromJson(ctx.body(), CreateGameRequest.class);
             int gameID = gameService.createGame(authToken, req.gameName());
-            ctx.status(200).json(new CreateGameResult(gameID));
+            sendJson(ctx, 200, new CreateGameResult(gameID));
         } catch (ServiceException e) {
-            ctx.status(e.getStatusCode()).json(new ErrorResult(e.getMessage()));
+            sendJson(ctx, e.getStatusCode(), new ErrorResult(e.getMessage()));
         }
     }
 
@@ -104,9 +108,9 @@ public class Server {
             String authToken = ctx.header("authorization");
             JoinGameRequest req = gson.fromJson(ctx.body(), JoinGameRequest.class);
             gameService.joinGame(authToken, req.playerColor(), req.gameID());
-            ctx.status(200).json(new Object());
+            sendJson(ctx, 200, new Object());
         } catch (ServiceException e) {
-            ctx.status(e.getStatusCode()).json(new ErrorResult(e.getMessage()));
+            sendJson(ctx, e.getStatusCode(), new ErrorResult(e.getMessage()));
         }
     }
 
