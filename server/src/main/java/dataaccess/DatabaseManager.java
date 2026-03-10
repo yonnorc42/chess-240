@@ -30,6 +30,46 @@ public class DatabaseManager {
     }
 
     /**
+     * Creates the database and tables if they do not already exist.
+     */
+    public static void configureDatabase() throws DataAccessException {
+        createDatabase();
+        String[] createStatements = {
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    username VARCHAR(256) NOT NULL PRIMARY KEY,
+                    password VARCHAR(256) NOT NULL,
+                    email VARCHAR(256) NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS auth_tokens (
+                    auth_token VARCHAR(256) NOT NULL PRIMARY KEY,
+                    username VARCHAR(256) NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS games (
+                    game_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    white_username VARCHAR(256),
+                    black_username VARCHAR(256),
+                    game_name VARCHAR(256) NOT NULL,
+                    game_json TEXT NOT NULL
+                )
+                """
+        };
+        try (var conn = getConnection()) {
+            for (var statement : createStatements) {
+                try (var preparedStatement = conn.prepareStatement(statement)) {
+                    preparedStatement.executeUpdate();
+                }
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("failed to create tables", ex);
+        }
+    }
+
+    /**
      * Create a connection to the database and sets the catalog based upon the
      * properties specified in db.properties. Connections to the database should
      * be short-lived, and you must close the connection when you are done with it.
