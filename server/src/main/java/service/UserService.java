@@ -6,6 +6,8 @@ import dataaccess.UserDAO;
 import model.AuthData;
 import model.UserData;
 
+import org.mindrot.jbcrypt.BCrypt;
+
 import java.util.UUID;
 
 public class UserService {
@@ -38,7 +40,7 @@ public class UserService {
         }
         try {
             UserData user = userDAO.getUser(username);
-            if (user == null || !user.password().equals(password)) {
+            if (user == null || !BCrypt.checkpw(password, user.password())) {
                 throw new ServiceException(401, "Error: unauthorized");
             }
             return createAuthToken(username);
