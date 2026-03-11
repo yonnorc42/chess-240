@@ -31,6 +31,14 @@ public class MySqlAuthDAOTest {
     }
 
     @Test
+    @DisplayName("Create duplicate auth token throws")
+    void createDuplicateAuth() throws DataAccessException {
+        authDAO.createAuth(new AuthData("token123", "alice"));
+        assertThrows(DataAccessException.class, () ->
+                authDAO.createAuth(new AuthData("token123", "bob")));
+    }
+
+    @Test
     @DisplayName("Get nonexistent auth returns null")
     void getNonexistentAuth() throws DataAccessException {
         assertNull(authDAO.getAuth("bad-token"));

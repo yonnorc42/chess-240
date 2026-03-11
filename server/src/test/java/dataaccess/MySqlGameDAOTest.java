@@ -38,6 +38,13 @@ public class MySqlGameDAOTest {
     }
 
     @Test
+    @DisplayName("Create game with null name throws")
+    void createGameNullName() {
+        GameData bad = new GameData(0, null, null, null, new ChessGame());
+        assertThrows(DataAccessException.class, () -> gameDAO.createGame(bad));
+    }
+
+    @Test
     @DisplayName("Get nonexistent game returns null")
     void getNonexistentGame() throws DataAccessException {
         assertNull(gameDAO.getGame(99999));
