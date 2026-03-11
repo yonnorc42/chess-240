@@ -18,15 +18,20 @@ public class Server {
     private final Javalin javalin;
     private final Gson gson = new Gson();
 
-    private final UserDAO userDAO = new MemoryUserDAO();
-    private final AuthDAO authDAO = new MemoryAuthDAO();
-    private final GameDAO gameDAO = new MemoryGameDAO();
+    private final UserDAO userDAO = new MySqlUserDAO();
+    private final AuthDAO authDAO = new MySqlAuthDAO();
+    private final GameDAO gameDAO = new MySqlGameDAO();
 
     private final UserService userService = new UserService(userDAO, authDAO);
     private final GameService gameService = new GameService(gameDAO, authDAO);
     private final ClearService clearService = new ClearService(userDAO, authDAO, gameDAO);
 
     public Server() {
+        try {
+            DatabaseManager.configureDatabase();
+        } catch (DataAccessException ex) {
+            throw new RuntimeException("failed to initialize database", ex);
+        }
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
 
         javalin.delete("/db", this::handleClear);
