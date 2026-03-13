@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import model.AuthData;
+import model.GameData;
 
 import java.io.*;
 import java.net.*;
@@ -79,6 +80,32 @@ public class ServerFacade {
     public AuthData login(String username, String password) throws ResponseException {
         record LoginRequest(String username, String password) {}
         return makeRequest("POST", "/session", new LoginRequest(username, password), null, AuthData.class);
+    }
+
+    public void logout(String authToken) throws ResponseException {
+        makeRequest("DELETE", "/session", null, authToken, null);
+    }
+
+    public int createGame(String authToken, String gameName) throws ResponseException {
+        record CreateGameRequest(String gameName) {}
+        record CreateGameResult(int gameID) {}
+        var result = makeRequest("POST", "/game", new CreateGameRequest(gameName), authToken, CreateGameResult.class);
+        return result.gameID();
+    }
+
+    public GameData[] listGames(String authToken) throws ResponseException {
+        record ListGamesResult(GameData[] games) {}
+        var result = makeRequest("GET", "/game", null, authToken, ListGamesResult.class);
+        return result.games();
+    }
+
+    public void joinGame(String authToken, String playerColor, int gameID) throws ResponseException {
+        record JoinGameRequest(String playerColor, int gameID) {}
+        makeRequest("PUT", "/game", new JoinGameRequest(playerColor, gameID), authToken, null);
+    }
+
+    public void clear() throws ResponseException {
+        makeRequest("DELETE", "/db", null, null, null);
     }
 
     private record ErrorMessage(String message) {
