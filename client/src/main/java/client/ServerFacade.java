@@ -5,6 +5,8 @@ import chess.ChessPieceDeserializer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import model.AuthData;
+
 import java.io.*;
 import java.net.*;
 
@@ -67,6 +69,16 @@ public class ServerFacade {
         } catch (Exception e) {
             throw new ResponseException(500, "Connection error: " + e.getMessage());
         }
+    }
+
+    public AuthData register(String username, String password, String email) throws ResponseException {
+        record RegisterRequest(String username, String password, String email) {}
+        return makeRequest("POST", "/user", new RegisterRequest(username, password, email), null, AuthData.class);
+    }
+
+    public AuthData login(String username, String password) throws ResponseException {
+        record LoginRequest(String username, String password) {}
+        return makeRequest("POST", "/session", new LoginRequest(username, password), null, AuthData.class);
     }
 
     private record ErrorMessage(String message) {
