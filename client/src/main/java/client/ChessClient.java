@@ -1,5 +1,6 @@
 package client;
 
+import model.AuthData;
 import model.GameData;
 
 public class ChessClient {
@@ -33,8 +34,28 @@ public class ChessClient {
         return switch (cmd) {
             case "help" -> helpPrelogin();
             case "quit" -> "quit";
+            case "register" -> register(params);
+            case "login" -> login(params);
             default -> "Unknown command. Type 'help' for available commands.";
         };
+    }
+
+    private String register(String[] params) throws ResponseException {
+        if (params.length != 4) {
+            return "Usage: register <USERNAME> <PASSWORD> <EMAIL>";
+        }
+        AuthData auth = server.register(params[1], params[2], params[3]);
+        authToken = auth.authToken();
+        return "Registered and logged in as " + auth.username() + ".";
+    }
+
+    private String login(String[] params) throws ResponseException {
+        if (params.length != 3) {
+            return "Usage: login <USERNAME> <PASSWORD>";
+        }
+        AuthData auth = server.login(params[1], params[2]);
+        authToken = auth.authToken();
+        return "Logged in as " + auth.username() + ".";
     }
 
     private String evalPostlogin(String cmd, String[] params) throws ResponseException {
