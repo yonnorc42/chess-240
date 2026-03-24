@@ -62,8 +62,16 @@ public class ChessClient {
         return switch (cmd) {
             case "help" -> helpPostlogin();
             case "quit" -> "quit";
+            case "logout" -> logout();
             default -> "Unknown command. Type 'help' for available commands.";
         };
+    }
+
+    private String logout() throws ResponseException {
+        server.logout(authToken);
+        authToken = null;
+        games = null;
+        return "Logged out.";
     }
 
     private String helpPrelogin() {
