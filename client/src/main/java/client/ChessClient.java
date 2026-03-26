@@ -66,8 +66,29 @@ public class ChessClient {
             case "create" -> createGame(params);
             case "list" -> listGames();
             case "join" -> joinGame(params);
+            case "observe" -> observeGame(params);
             default -> "Unknown command. Type 'help' for available commands.";
         };
+    }
+
+    private String observeGame(String[] params) throws ResponseException {
+        if (params.length != 2) {
+            return "Usage: observe <ID>";
+        }
+        if (games == null) {
+            return "Please run 'list' first to see available games.";
+        }
+        int index;
+        try {
+            index = Integer.parseInt(params[1]);
+        } catch (NumberFormatException e) {
+            return "Invalid game number. Use the number from 'list'.";
+        }
+        if (index < 1 || index > games.length) {
+            return "Invalid game number. Use a number between 1 and " + games.length + ".";
+        }
+        GameData game = games[index - 1];
+        return "Observing game \"" + game.gameName() + "\".";
     }
 
     private String joinGame(String[] params) throws ResponseException {
