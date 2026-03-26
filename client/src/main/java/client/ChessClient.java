@@ -65,8 +65,34 @@ public class ChessClient {
             case "logout" -> logout();
             case "create" -> createGame(params);
             case "list" -> listGames();
+            case "join" -> joinGame(params);
             default -> "Unknown command. Type 'help' for available commands.";
         };
+    }
+
+    private String joinGame(String[] params) throws ResponseException {
+        if (params.length != 3) {
+            return "Usage: join <ID> [WHITE|BLACK]";
+        }
+        if (games == null) {
+            return "Please run 'list' first to see available games.";
+        }
+        int index;
+        try {
+            index = Integer.parseInt(params[1]);
+        } catch (NumberFormatException e) {
+            return "Invalid game number. Use the number from 'list'.";
+        }
+        if (index < 1 || index > games.length) {
+            return "Invalid game number. Use a number between 1 and " + games.length + ".";
+        }
+        String color = params[2].toUpperCase();
+        if (!color.equals("WHITE") && !color.equals("BLACK")) {
+            return "Color must be WHITE or BLACK.";
+        }
+        GameData game = games[index - 1];
+        server.joinGame(authToken, color, game.gameID());
+        return "Joined game \"" + game.gameName() + "\" as " + color + ".";
     }
 
     private String listGames() throws ResponseException {
