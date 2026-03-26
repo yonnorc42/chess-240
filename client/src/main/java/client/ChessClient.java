@@ -64,8 +64,26 @@ public class ChessClient {
             case "quit" -> "quit";
             case "logout" -> logout();
             case "create" -> createGame(params);
+            case "list" -> listGames();
             default -> "Unknown command. Type 'help' for available commands.";
         };
+    }
+
+    private String listGames() throws ResponseException {
+        games = server.listGames(authToken);
+        if (games.length == 0) {
+            return "No games found.";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < games.length; i++) {
+            GameData g = games[i];
+            sb.append(String.format("  %d. %s -- White: %s | Black: %s%n",
+                    i + 1,
+                    g.gameName(),
+                    g.whiteUsername() != null ? g.whiteUsername() : "(empty)",
+                    g.blackUsername() != null ? g.blackUsername() : "(empty)"));
+        }
+        return sb.toString().stripTrailing();
     }
 
     private String createGame(String[] params) throws ResponseException {
