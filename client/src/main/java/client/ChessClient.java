@@ -28,7 +28,11 @@ public class ChessClient {
                 return evalPrelogin(cmd, tokens);
             }
         } catch (ResponseException e) {
-            return e.getMessage();
+            String msg = e.getMessage();
+            if (msg != null && msg.startsWith("Error: ")) {
+                msg = msg.substring(7);
+            }
+            return "Error: " + msg;
         }
     }
 
