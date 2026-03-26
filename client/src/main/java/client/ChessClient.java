@@ -1,7 +1,9 @@
 package client;
 
+import chess.ChessGame;
 import model.AuthData;
 import model.GameData;
+import ui.BoardRenderer;
 
 public class ChessClient {
     private final ServerFacade server;
@@ -88,7 +90,8 @@ public class ChessClient {
             return "Invalid game number. Use a number between 1 and " + games.length + ".";
         }
         GameData game = games[index - 1];
-        return "Observing game \"" + game.gameName() + "\".";
+        return "Observing game \"" + game.gameName() + "\".\n"
+                + BoardRenderer.render(game.game().getBoard(), ChessGame.TeamColor.WHITE);
     }
 
     private String joinGame(String[] params) throws ResponseException {
@@ -113,7 +116,9 @@ public class ChessClient {
         }
         GameData game = games[index - 1];
         server.joinGame(authToken, color, game.gameID());
-        return "Joined game \"" + game.gameName() + "\" as " + color + ".";
+        ChessGame.TeamColor perspective = ChessGame.TeamColor.valueOf(color);
+        return "Joined game \"" + game.gameName() + "\" as " + color + ".\n"
+                + BoardRenderer.render(game.game().getBoard(), perspective);
     }
 
     private String listGames() throws ResponseException {
