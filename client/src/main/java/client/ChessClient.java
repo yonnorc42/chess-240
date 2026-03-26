@@ -63,8 +63,17 @@ public class ChessClient {
             case "help" -> helpPostlogin();
             case "quit" -> "quit";
             case "logout" -> logout();
+            case "create" -> createGame(params);
             default -> "Unknown command. Type 'help' for available commands.";
         };
+    }
+
+    private String createGame(String[] params) throws ResponseException {
+        if (params.length != 2) {
+            return "Usage: create <NAME>";
+        }
+        server.createGame(authToken, params[1]);
+        return "Created game \"" + params[1] + "\".";
     }
 
     private String logout() throws ResponseException {
