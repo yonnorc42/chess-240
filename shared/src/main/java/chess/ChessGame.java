@@ -14,11 +14,21 @@ public class ChessGame {
     private ChessBoard board;
     private TeamColor teamTurn;
     private ChessMove lastMove;
+    private boolean isOver;
 
     public ChessGame() {
         this.board = new ChessBoard();
         this.board.resetBoard();
         this.teamTurn = TeamColor.WHITE;
+        this.isOver = false;
+    }
+
+    public boolean isOver() {
+        return isOver;
+    }
+
+    public void setOver(boolean over) {
+        isOver = over;
     }
 
     /**
