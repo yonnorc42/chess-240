@@ -9,6 +9,7 @@ import model.GameData;
 import model.UserData;
 import server.request.*;
 import server.result.*;
+import server.websocket.WebSocketHandler;
 import service.*;
 
 import java.util.Collection;
@@ -25,6 +26,7 @@ public class Server {
     private final UserService userService = new UserService(userDAO, authDAO);
     private final GameService gameService = new GameService(gameDAO, authDAO);
     private final ClearService clearService = new ClearService(userDAO, authDAO, gameDAO);
+    private final WebSocketHandler webSocketHandler = new WebSocketHandler(authDAO, gameDAO);
 
     public Server() {
         try {
@@ -33,6 +35,10 @@ public class Server {
             throw new RuntimeException("failed to initialize database", ex);
         }
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
+
+        javalin.ws("/ws", ws -> {
+            ws.onMessage(webSocketHandler::onMessage);
+        });
 
         javalin.delete("/db", this::handleClear);
         javalin.post("/user", this::handleRegister);
