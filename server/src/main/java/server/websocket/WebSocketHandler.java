@@ -38,7 +38,8 @@ public class WebSocketHandler {
         switch (command.getCommandType()) {
             case CONNECT -> handleConnect(session, command);
             case MAKE_MOVE -> handleMakeMove(session, gson.fromJson(message, MakeMoveCommand.class));
-            default -> sendError(session, "Unknown command type");
+            case LEAVE -> handleLeave(session, command);
+            case RESIGN -> handleResign(session, command);
         }
     }
 
@@ -157,6 +158,84 @@ public class WebSocketHandler {
 
         } catch (InvalidMoveException e) {
             sendError(session, "Error: invalid move");
+        } catch (DataAccessException e) {
+            sendError(session, "Error: " + e.getMessage());
+        }
+    }
+
+    private void handleLeave(Session session, UserGameCommand command) throws IOException {
+        try {
+            AuthData auth = authDAO.getAuth(command.getAuthToken());
+            if (auth == null) {
+                sendError(session, "Error: unauthorized");
+                return;
+            }
+            GameData gameData = gameDAO.getGame(command.getGameID());
+            if (gameData == null) {
+                sendError(session, "Error: game not found");
+                return;
+            }
+
+            String username = auth.username();
+
+            // Remove player from game if they were a player
+            if (username.equals(gameData.whiteUsername())) {
+                gameDAO.updateGame(new GameData(gameData.gameID(), null,
+                        gameData.blackUsername(), gameData.gameName(), gameData.game()));
+            } else if (username.equals(gameData.blackUsername())) {
+                gameDAO.updateGame(new GameData(gameData.gameID(), gameData.whiteUsername(),
+                        null, gameData.gameName(), gameData.game()));
+            }
+
+            // Notify remaining users
+            connections.broadcast(command.getGameID(), username,
+                    new NotificationMessage(username + " left the game"));
+
+            // Remove connection
+            connections.remove(username);
+
+        } catch (DataAccessException e) {
+            sendError(session, "Error: " + e.getMessage());
+        }
+    }
+
+    private void handleResign(Session session, UserGameCommand command) throws IOException {
+        try {
+            AuthData auth = authDAO.getAuth(command.getAuthToken());
+            if (auth == null) {
+                sendError(session, "Error: unauthorized");
+                return;
+            }
+            GameData gameData = gameDAO.getGame(command.getGameID());
+            if (gameData == null) {
+                sendError(session, "Error: game not found");
+                return;
+            }
+
+            String username = auth.username();
+            ChessGame game = gameData.game();
+
+            // Check if user is a player
+            if (!username.equals(gameData.whiteUsername()) && !username.equals(gameData.blackUsername())) {
+                sendError(session, "Error: observers cannot resign");
+                return;
+            }
+
+            // Check if game is already over
+            if (game.isOver()) {
+                sendError(session, "Error: game is already over");
+                return;
+            }
+
+            // Mark game as over
+            game.setOver(true);
+            gameDAO.updateGame(new GameData(gameData.gameID(), gameData.whiteUsername(),
+                    gameData.blackUsername(), gameData.gameName(), game));
+
+            // Notify ALL users including resigner
+            connections.broadcast(command.getGameID(), null,
+                    new NotificationMessage(username + " resigned"));
+
         } catch (DataAccessException e) {
             sendError(session, "Error: " + e.getMessage());
         }
