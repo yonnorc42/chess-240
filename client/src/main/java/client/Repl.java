@@ -13,7 +13,14 @@ public class Repl {
         System.out.println("♕ 240 Chess Client. Type help to get started.");
         Scanner scanner = new Scanner(System.in);
         while (true) {
-            String prompt = client.isLoggedIn() ? "[LOGGED_IN] >>> " : "[LOGGED_OUT] >>> ";
+            String prompt;
+            if (client.isInGame()) {
+                prompt = "[IN_GAME] >>> ";
+            } else if (client.isLoggedIn()) {
+                prompt = "[LOGGED_IN] >>> ";
+            } else {
+                prompt = "[LOGGED_OUT] >>> ";
+            }
             System.out.print(prompt);
             if (!scanner.hasNextLine()) {
                 break;

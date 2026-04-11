@@ -4,25 +4,39 @@ import chess.ChessGame;
 import model.AuthData;
 import model.GameData;
 import ui.BoardRenderer;
+import websocket.commands.UserGameCommand;
 
-public class ChessClient {
+public class ChessClient implements GameHandler {
+    private final String serverUrl;
     private final ServerFacade server;
     private String authToken = null;
     private GameData[] games = null;
 
+    private WebSocketCommunicator ws = null;
+    private Integer currentGameID = null;
+    private ChessGame.TeamColor currentColor = null;
+    private ChessGame currentGame = null;
+
     public ChessClient(String serverUrl) {
-        server = new ServerFacade(serverUrl);
+        this.serverUrl = serverUrl;
+        this.server = new ServerFacade(serverUrl);
     }
 
     public boolean isLoggedIn() {
         return authToken != null;
     }
 
+    public boolean isInGame() {
+        return currentGameID != null;
+    }
+
     public String eval(String input) {
         String[] tokens = input.strip().split("\\s+");
         String cmd = tokens[0].toLowerCase();
         try {
-            if (isLoggedIn()) {
+            if (isInGame()) {
+                return evalGameplay(cmd, tokens);
+            } else if (isLoggedIn()) {
                 return evalPostlogin(cmd, tokens);
             } else {
                 return evalPrelogin(cmd, tokens);
@@ -77,6 +91,38 @@ public class ChessClient {
         };
     }
 
+    private String evalGameplay(String cmd, String[] params) throws ResponseException {
+        return switch (cmd) {
+            case "help" -> helpGameplay();
+            case "redraw" -> redraw();
+            case "leave" -> leave();
+            case "move" -> makeMove(params);
+            case "resign" -> resign();
+            case "highlight" -> highlight(params);
+            default -> "Unknown command. Type 'help' for available commands.";
+        };
+    }
+
+    private String redraw() {
+        return "(redraw not yet implemented)";
+    }
+
+    private String leave() {
+        return "(leave not yet implemented)";
+    }
+
+    private String makeMove(String[] params) {
+        return "(move not yet implemented)";
+    }
+
+    private String resign() {
+        return "(resign not yet implemented)";
+    }
+
+    private String highlight(String[] params) {
+        return "(highlight not yet implemented)";
+    }
+
     private String observeGame(String[] params) throws ResponseException {
         if (params.length != 2) {
             return "Usage: observe <ID>";
@@ -94,8 +140,8 @@ public class ChessClient {
             return "Invalid game number. Use a number between 1 and " + games.length + ".";
         }
         GameData game = games[index - 1];
-        return "Observing game \"" + game.gameName() + "\".\n"
-                + BoardRenderer.render(game.game().getBoard(), ChessGame.TeamColor.WHITE);
+        connectWebSocket(game.gameID(), null);
+        return "Observing game \"" + game.gameName() + "\".";
     }
 
     private String joinGame(String[] params) throws ResponseException {
@@ -121,8 +167,49 @@ public class ChessClient {
         GameData game = games[index - 1];
         server.joinGame(authToken, color, game.gameID());
         ChessGame.TeamColor perspective = ChessGame.TeamColor.valueOf(color);
-        return "Joined game \"" + game.gameName() + "\" as " + color + ".\n"
-                + BoardRenderer.render(game.game().getBoard(), perspective);
+        connectWebSocket(game.gameID(), perspective);
+        return "Joined game \"" + game.gameName() + "\" as " + color + ".";
+    }
+
+    private void connectWebSocket(int gameID, ChessGame.TeamColor color) throws ResponseException {
+        ws = new WebSocketCommunicator();
+        ws.connect(serverUrl, this);
+        ws.send(new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, gameID));
+        currentGameID = gameID;
+        currentColor = color;
+    }
+
+    @Override
+    public void onLoadGame(ChessGame game) {
+        currentGame = game;
+        ChessGame.TeamColor perspective = (currentColor != null) ? currentColor : ChessGame.TeamColor.WHITE;
+        System.out.println();
+        System.out.println(BoardRenderer.render(game.getBoard(), perspective));
+        System.out.print(promptString());
+    }
+
+    @Override
+    public void onNotification(String message) {
+        System.out.println();
+        System.out.println("[NOTIFICATION] " + message);
+        System.out.print(promptString());
+    }
+
+    @Override
+    public void onError(String message) {
+        System.out.println();
+        System.out.println("[ERROR] " + message);
+        System.out.print(promptString());
+    }
+
+    private String promptString() {
+        if (isInGame()) {
+            return "[IN_GAME] >>> ";
+        } else if (isLoggedIn()) {
+            return "[LOGGED_IN] >>> ";
+        } else {
+            return "[LOGGED_OUT] >>> ";
+        }
     }
 
     private String listGames() throws ResponseException {
@@ -173,6 +260,16 @@ public class ChessClient {
                 observe <ID> - a game
                 logout - when you are done
                 quit - playing chess
+                help - with possible commands""";
+    }
+
+    private String helpGameplay() {
+        return """
+                redraw - the chess board
+                move <FROM> <TO> [PROMOTION] - make a move (e.g. e2 e4)
+                highlight <POSITION> - legal moves from a square (e.g. e2)
+                resign - forfeit the game
+                leave - the game
                 help - with possible commands""";
     }
 }
