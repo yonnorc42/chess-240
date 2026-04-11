@@ -1,9 +1,13 @@
 package client;
 
 import chess.ChessGame;
+import chess.ChessMove;
+import chess.ChessPiece;
+import chess.ChessPosition;
 import model.AuthData;
 import model.GameData;
 import ui.BoardRenderer;
+import websocket.commands.MakeMoveCommand;
 import websocket.commands.UserGameCommand;
 
 public class ChessClient implements GameHandler {
@@ -111,8 +115,52 @@ public class ChessClient implements GameHandler {
         return "(leave not yet implemented)";
     }
 
-    private String makeMove(String[] params) {
-        return "(move not yet implemented)";
+    private String makeMove(String[] params) throws ResponseException {
+        if (params.length != 3 && params.length != 4) {
+            return "Usage: move <FROM> <TO> [PROMOTION]";
+        }
+        if (currentColor == null) {
+            return "Observers cannot make moves.";
+        }
+        ChessPosition start = parsePosition(params[1]);
+        ChessPosition end = parsePosition(params[2]);
+        if (start == null || end == null) {
+            return "Invalid position. Use format like 'e2'.";
+        }
+        ChessPiece.PieceType promotion = null;
+        if (params.length == 4) {
+            promotion = parsePromotion(params[3]);
+            if (promotion == null) {
+                return "Invalid promotion piece. Use q, r, b, or n.";
+            }
+        }
+        ChessMove move = new ChessMove(start, end, promotion);
+        ws.send(new MakeMoveCommand(authToken, currentGameID, move));
+        return "";
+    }
+
+    private ChessPosition parsePosition(String s) {
+        if (s == null || s.length() != 2) {
+            return null;
+        }
+        char colChar = Character.toLowerCase(s.charAt(0));
+        char rowChar = s.charAt(1);
+        if (colChar < 'a' || colChar > 'h' || rowChar < '1' || rowChar > '8') {
+            return null;
+        }
+        int col = colChar - 'a' + 1;
+        int row = rowChar - '0';
+        return new ChessPosition(row, col);
+    }
+
+    private ChessPiece.PieceType parsePromotion(String s) {
+        return switch (s.toLowerCase()) {
+            case "q" -> ChessPiece.PieceType.QUEEN;
+            case "r" -> ChessPiece.PieceType.ROOK;
+            case "b" -> ChessPiece.PieceType.BISHOP;
+            case "n" -> ChessPiece.PieceType.KNIGHT;
+            default -> null;
+        };
     }
 
     private String resign() {
