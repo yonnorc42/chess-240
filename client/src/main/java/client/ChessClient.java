@@ -195,7 +195,19 @@ public class ChessClient implements GameHandler {
     }
 
     private String highlight(String[] params) {
-        return "(highlight not yet implemented)";
+        if (params.length != 2) {
+            return "Usage: highlight <POSITION>";
+        }
+        if (currentGame == null) {
+            return "No game loaded yet.";
+        }
+        ChessPosition pos = parsePosition(params[1]);
+        if (pos == null) {
+            return "Invalid position. Use format like 'e2'.";
+        }
+        var moves = currentGame.validMoves(pos);
+        ChessGame.TeamColor perspective = (currentColor != null) ? currentColor : ChessGame.TeamColor.WHITE;
+        return BoardRenderer.renderHighlighted(currentGame.getBoard(), perspective, pos, moves);
     }
 
     private String observeGame(String[] params) throws ResponseException {

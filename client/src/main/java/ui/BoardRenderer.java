@@ -2,11 +2,31 @@ package ui;
 
 import chess.*;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 import static ui.EscapeSequences.*;
 
 public class BoardRenderer {
 
     public static String render(ChessBoard board, ChessGame.TeamColor perspective) {
+        return renderInternal(board, perspective, null, null);
+    }
+
+    public static String renderHighlighted(ChessBoard board, ChessGame.TeamColor perspective,
+                                           ChessPosition selected, Collection<ChessMove> moves) {
+        Set<ChessPosition> destinations = new HashSet<>();
+        if (moves != null) {
+            for (ChessMove move : moves) {
+                destinations.add(move.getEndPosition());
+            }
+        }
+        return renderInternal(board, perspective, selected, destinations);
+    }
+
+    private static String renderInternal(ChessBoard board, ChessGame.TeamColor perspective,
+                                         ChessPosition selected, Set<ChessPosition> destinations) {
         StringBuilder sb = new StringBuilder();
 
         boolean whiteBottom = (perspective == ChessGame.TeamColor.WHITE);
@@ -18,7 +38,7 @@ public class BoardRenderer {
         int rowStep = whiteBottom ? -1 : 1;
 
         for (int row = startRow; row != endRow; row += rowStep) {
-            sb.append(renderRow(board, row, whiteBottom));
+            sb.append(renderRow(board, row, whiteBottom, selected, destinations));
         }
 
         sb.append(renderColumnHeaders(whiteBottom));
@@ -42,7 +62,8 @@ public class BoardRenderer {
         return sb.toString();
     }
 
-    private static String renderRow(ChessBoard board, int row, boolean whiteBottom) {
+    private static String renderRow(ChessBoard board, int row, boolean whiteBottom,
+                                    ChessPosition selected, Set<ChessPosition> destinations) {
         StringBuilder sb = new StringBuilder();
 
         sb.append(SET_BG_COLOR_LIGHT_GREY).append(SET_TEXT_COLOR_BLACK);
@@ -53,10 +74,19 @@ public class BoardRenderer {
         int colStep = whiteBottom ? 1 : -1;
 
         for (int col = startCol; col != endCol; col += colStep) {
+            ChessPosition pos = new ChessPosition(row, col);
             boolean lightSquare = (row + col) % 2 != 0;
-            sb.append(lightSquare ? SET_BG_COLOR_WHITE : SET_BG_COLOR_DARK_GREEN);
+            String bg;
+            if (selected != null && selected.equals(pos)) {
+                bg = SET_BG_COLOR_YELLOW;
+            } else if (destinations != null && destinations.contains(pos)) {
+                bg = SET_BG_COLOR_GREEN;
+            } else {
+                bg = lightSquare ? SET_BG_COLOR_WHITE : SET_BG_COLOR_DARK_GREEN;
+            }
+            sb.append(bg);
 
-            ChessPiece piece = board.getPiece(new ChessPosition(row, col));
+            ChessPiece piece = board.getPiece(pos);
             sb.append(pieceToString(piece));
         }
 
