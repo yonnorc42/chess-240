@@ -20,6 +20,7 @@ public class ChessClient implements GameHandler {
     private Integer currentGameID = null;
     private ChessGame.TeamColor currentColor = null;
     private ChessGame currentGame = null;
+    private boolean pendingResign = false;
 
     public ChessClient(String serverUrl) {
         this.serverUrl = serverUrl;
@@ -38,6 +39,9 @@ public class ChessClient implements GameHandler {
         String[] tokens = input.strip().split("\\s+");
         String cmd = tokens[0].toLowerCase();
         try {
+            if (pendingResign) {
+                return handleResignConfirmation(cmd);
+            }
             if (isInGame()) {
                 return evalGameplay(cmd, tokens);
             } else if (isLoggedIn()) {
@@ -108,11 +112,21 @@ public class ChessClient implements GameHandler {
     }
 
     private String redraw() {
-        return "(redraw not yet implemented)";
+        if (currentGame == null) {
+            return "No game loaded yet.";
+        }
+        ChessGame.TeamColor perspective = (currentColor != null) ? currentColor : ChessGame.TeamColor.WHITE;
+        return BoardRenderer.render(currentGame.getBoard(), perspective);
     }
 
-    private String leave() {
-        return "(leave not yet implemented)";
+    private String leave() throws ResponseException {
+        ws.send(new UserGameCommand(UserGameCommand.CommandType.LEAVE, authToken, currentGameID));
+        ws.close();
+        ws = null;
+        currentGameID = null;
+        currentColor = null;
+        currentGame = null;
+        return "Left the game.";
     }
 
     private String makeMove(String[] params) throws ResponseException {
@@ -164,7 +178,20 @@ public class ChessClient implements GameHandler {
     }
 
     private String resign() {
-        return "(resign not yet implemented)";
+        if (currentColor == null) {
+            return "Observers cannot resign.";
+        }
+        pendingResign = true;
+        return "Are you sure you want to resign? Type 'yes' to confirm or 'no' to cancel.";
+    }
+
+    private String handleResignConfirmation(String cmd) throws ResponseException {
+        pendingResign = false;
+        if (cmd.equals("yes")) {
+            ws.send(new UserGameCommand(UserGameCommand.CommandType.RESIGN, authToken, currentGameID));
+            return "";
+        }
+        return "Resignation cancelled.";
     }
 
     private String highlight(String[] params) {
